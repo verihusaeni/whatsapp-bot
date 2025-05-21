@@ -1,48 +1,52 @@
-const { default: makeWASocket, useSingleFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys')
+const { default: makeWASocket, useSingleFileAuthState } = require('@whiskeysockets/baileys')
 const pino = require('pino')
-const axios = require('axios')
-const fs = require('fs')
 
-const { state, saveState } = useSingleFileAuthState('./auth.json')
+const { state, saveState } = useSingleFileAuthState('./session/auth.json')
 
 async function startBot() {
-  const sock = makeWASocket({
-    logger: pino({ level: 'silent' }),
-    printQRInTerminal: true,
-    auth: state
-  })
+    const sock = makeWASocket({
+        logger: pino({ level: 'silent' }),
+        printQRInTerminal: true,
+        auth: state
+    })
 
-  sock.ev.on('creds.update', saveState)
+    sock.ev.on('creds.update', saveState)
 
-  sock.ev.on('messages.upsert', async ({ messages }) => {
-    const msg = messages[0]
-    if (!msg.message || msg.key.fromMe) return
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+        const msg = messages[0]
+        if (!msg.message) return
 
-    const text = msg.message.conversation || msg.message.extendedTextMessage?.text || ''
+        const pesan = msg.message.conversation || msg.message.extendedTextMessage?.text || ""
+        const from = msg.key.remoteJid
 
-    if (text.toLowerCase() === '!jadwal') {
-      const res = await axios.get('https://your-vercel-app.vercel.app/api/jadwal') // <- Ganti ini
-      await sock.sendMessage(msg.key.remoteJid, { text: res.data.jadwal })
-    }
+        if (pesan.toLowerCase() === "jadwal") {
+            const jadwal = "📚 Jadwal Hari Ini:
+1. Matematika
+2. Bahasa Inggris
+3. IPA"
+            await sock.sendMessage(from, { text: jadwal })
+        }
 
-    if (text.toLowerCase() === '!buka') {
-      await sock.groupSettingUpdate(msg.key.remoteJid, 'not_announcement')
-      await sock.sendMessage(msg.key.remoteJid, { text: '✅ Grup dibuka' })
-    }
+        if (pesan.toLowerCase() === "shalat") {
+            const shalat = "🕌 Jadwal Shalat:
+- Subuh: 04:40
+- Dzuhur: 12:00
+- Ashar: 15:20
+- Maghrib: 18:00
+- Isya: 19:10"
+            await sock.sendMessage(from, { text: shalat })
+        }
 
-    if (text.toLowerCase() === '!tutup') {
-      await sock.groupSettingUpdate(msg.key.remoteJid, 'announcement')
-      await sock.sendMessage(msg.key.remoteJid, { text: '🔒 Grup ditutup' })
-    }
-  })
+        if (pesan.toLowerCase() === "tutup grup") {
+            await sock.groupSettingUpdate(from, "announcement") // Tutup grup
+            await sock.sendMessage(from, { text: "🔒 Grup ditutup oleh bot." })
+        }
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect } = update
-    if (connection === 'close') {
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
-      if (shouldReconnect) startBot()
-    }
-  })
+        if (pesan.toLowerCase() === "buka grup") {
+            await sock.groupSettingUpdate(from, "not_announcement") // Buka grup
+            await sock.sendMessage(from, { text: "🔓 Grup dibuka oleh bot." })
+        }
+    })
 }
 
 startBot()

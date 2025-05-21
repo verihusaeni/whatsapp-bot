@@ -1,14 +1,12 @@
 {
   "name": "whatsapp-bot",
   "version": "1.0.0",
-  "description": "WhatsApp bot with jadwal reminders and group control",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.17",
-    "axios": "^1.6.8",
+    "@whiskeysockets/baileys": "^6.6.0",
     "pino": "^8.0.0"
   }
 }
